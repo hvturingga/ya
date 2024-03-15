@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hvturingga/ya/cmd/cli/internal/tmpl"
+	"github.com/hvturingga/ya/cmd/cli/internal"
+	"github.com/hvturingga/ya/cmd/cli/tmpl"
 	"github.com/hvturingga/ya/conf"
 	"github.com/hvturingga/ya/ent"
-	U "github.com/hvturingga/ya/ent/user"
 	"github.com/hvturingga/ya/internal/entclient"
-	"github.com/hvturingga/ya/internal/ya"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -30,7 +29,7 @@ var daemonRunCmd = &cobra.Command{
 	Short:   "Run the daemon.",
 	Long:    `Run the daemon service.`,
 	Aliases: []string{"start"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		client, err := entclient.New()
 		if err != nil {
@@ -39,16 +38,11 @@ var daemonRunCmd = &cobra.Command{
 		}
 		defer client.Close()
 
-		user := client.User.
-			Query().
-			Where(
-				U.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			OnlyX(ctx)
-
-		subscribe, err := user.
+		getUser, err := internal.GetUser(ctx, client)
+		if err != nil {
+			return err
+		}
+		subscribe, err := getUser.
 			QuerySubscribe().
 			Only(ctx)
 		if err != nil {
@@ -56,8 +50,7 @@ var daemonRunCmd = &cobra.Command{
 				fmt.Println("No subscription found.")
 				os.Exit(0)
 			}
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		f, err := os.ReadFile(subscribe.Conf)
@@ -96,7 +89,7 @@ var daemonRunCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		daemon := user.QueryDaemon().OnlyX(ctx)
+		daemon := getUser.QueryDaemon().OnlyX(ctx)
 		goos := runtime.GOOS
 		if goos == "windows" {
 			cmd := fmt.Sprintf("Start-Process powershell -WindowStyle Hidden -ArgumentList '%s start'", daemon.Path)
@@ -116,6 +109,7 @@ var daemonRunCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
+		return nil
 	},
 }
 
@@ -124,7 +118,7 @@ var daemonKillCmd = &cobra.Command{
 	Short:   "Kill the daemon.",
 	Long:    `Kill the daemon service.`,
 	Aliases: []string{"k", "stop"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		client, err := entclient.New()
 		if err != nil {
@@ -133,16 +127,12 @@ var daemonKillCmd = &cobra.Command{
 		}
 		defer client.Close()
 
-		user := client.User.
-			Query().
-			Where(
-				U.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			OnlyX(ctx)
+		getUser, err := internal.GetUser(ctx, client)
+		if err != nil {
+			return err
+		}
 
-		daemon := user.QueryDaemon().OnlyX(ctx)
+		daemon := getUser.QueryDaemon().OnlyX(ctx)
 		goos := runtime.GOOS
 		if goos == "windows" {
 			cmd := fmt.Sprintf("Start-Process powershell -WindowStyle Hidden -ArgumentList '%s stop'", daemon.Path)
@@ -164,6 +154,7 @@ var daemonKillCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
+		return nil
 	},
 }
 
@@ -172,7 +163,7 @@ var daemonEnableCmd = &cobra.Command{
 	Short:   "Enable autostart on boot.",
 	Long:    `Enable the daemon to autostart on boot.`,
 	Aliases: []string{"e"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
 		client, err := entclient.New()
@@ -182,22 +173,18 @@ var daemonEnableCmd = &cobra.Command{
 		}
 		defer client.Close()
 
-		user := client.User.
-			Query().
-			Where(
-				U.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			OnlyX(ctx)
+		getUser, err := internal.GetUser(ctx, client)
+		if err != nil {
+			return err
+		}
 
-		daemon := user.QueryDaemon().OnlyX(ctx)
+		daemon := getUser.QueryDaemon().OnlyX(ctx)
 
 		goos := runtime.GOOS
 		if goos == "windows" {
 			conf := tmpl.YaDaemonPs1{
 				TaskName: "YaDaemon",
-				Command:  fmt.Sprintf("%s start -d %s", daemon.Path, ya.GetYaDatabasePath()),
+				Command:  fmt.Sprintf("%s start -d %s", daemon.Path, conf.GetDatabasePath()),
 			}
 
 			a, err := template.New("a").Parse(tmpl.YaDaemonTpl)
@@ -229,11 +216,11 @@ var daemonEnableCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "Failed to run auto start script: %v\n", err)
 				os.Exit(1)
 			} else {
-				user.QueryDaemon().OnlyX(ctx).Update().SetEnable(true).SaveX(ctx)
+				getUser.QueryDaemon().OnlyX(ctx).Update().SetEnable(true).SaveX(ctx)
 			}
 		} else if goos == "linux" {
 			conf := tmpl.YaDaemonSystemd{
-				User:      ya.GetUser(),
+				User:      "root",
 				ExecStart: fmt.Sprintf("%s start", daemon.Path),
 			}
 
@@ -268,9 +255,10 @@ var daemonEnableCmd = &cobra.Command{
 				os.Exit(1)
 			} else {
 				daemonRunCmd.Run(cmd, args)
-				user.QueryDaemon().OnlyX(ctx).Update().SetEnable(true).SaveX(ctx)
+				getUser.QueryDaemon().OnlyX(ctx).Update().SetEnable(true).SaveX(ctx)
 			}
 		}
+		return nil
 	},
 }
 
@@ -279,25 +267,19 @@ var daemonDisableCmd = &cobra.Command{
 	Short:   "Disable daemon autostart on boot",
 	Long:    `Disable the daemon from autostart on boot.`,
 	Aliases: []string{"d"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		client, err := entclient.New()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 		defer client.Close()
 
-		user := client.User.
-			Query().
-			Where(
-				U.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			OnlyX(ctx)
-
-		daemon := user.QueryDaemon().OnlyX(ctx)
+		getUser, err := internal.GetUser(ctx, client)
+		if err != nil {
+			return err
+		}
+		daemon := getUser.QueryDaemon().OnlyX(ctx)
 
 		goos := runtime.GOOS
 		if goos == "windows" {
@@ -320,9 +302,10 @@ var daemonDisableCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "Failed to disable ya-daemon service: %v\n", err)
 				os.Exit(1)
 			} else {
-				user.QueryDaemon().OnlyX(ctx).Update().SetEnable(false).SaveX(ctx)
+				getUser.QueryDaemon().OnlyX(ctx).Update().SetEnable(false).SaveX(ctx)
 			}
 		}
+		return nil
 	},
 }
 

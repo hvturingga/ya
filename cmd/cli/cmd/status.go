@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hvturingga/ya/cmd/cli/internal"
 	"github.com/hvturingga/ya/conf"
-	"github.com/hvturingga/ya/ent/user"
 	api_server "github.com/hvturingga/ya/internal/api-server"
 	"github.com/hvturingga/ya/internal/entclient"
-	"github.com/hvturingga/ya/internal/ya"
 	"io"
 	"net/http"
 	"os"
@@ -38,11 +37,6 @@ var statusCmd = &cobra.Command{
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
 		{
-			fmt.Fprintf(w, "%s\t%s\n", "User", ya.GetUser())
-			w.Flush()
-		}
-
-		{
 			r, err := http.Get(fmt.Sprintf("http://%s/configs", conf.ClashAPI))
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
@@ -70,44 +64,31 @@ var statusCmd = &cobra.Command{
 
 		{ // Interact with Database.
 
-			// Query the Provider in use by the user.
-			query, err := client.User.Query().
-				Where(
-					user.NameEQ(
-						ya.GetUser(),
-					),
-				).
-				WithProvider().
-				WithSubscribe().
-				Only(ctx)
+			getUser, err := internal.GetUser(ctx, client)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				return
 			}
 			fmt.Println("\nActive Provider:")
-			if query.Edges.Provider != nil {
-				fmt.Fprintf(w, "%s\t%s\n", "Name", query.Edges.Provider.Name)
-				fmt.Fprintf(w, "%s\t%s\n", "Version", query.Edges.Provider.Version)
-				fmt.Fprintf(w, "%s\t%s\n", "Path", query.Edges.Provider.Path)
+			if getUser.Edges.Provider != nil {
+				fmt.Fprintf(w, "%s\t%s\n", "Name", getUser.Edges.Provider.Name)
+				fmt.Fprintf(w, "%s\t%s\n", "Version", getUser.Edges.Provider.Version)
+				fmt.Fprintf(w, "%s\t%s\n", "Path", getUser.Edges.Provider.Path)
 				w.Flush()
 			}
 
 			fmt.Println("\nActive Subscription:")
-			if query.Edges.Subscribe != nil {
-				fmt.Fprintf(w, "%s\t%s\n", "Name", query.Edges.Subscribe.Name)
-				fmt.Fprintf(w, "%s\t%s\n", "Config", query.Edges.Subscribe.Conf)
+			if getUser.Edges.Subscribe != nil {
+				fmt.Fprintf(w, "%s\t%s\n", "Name", getUser.Edges.Subscribe.Name)
+				fmt.Fprintf(w, "%s\t%s\n", "Config", getUser.Edges.Subscribe.Conf)
 				w.Flush()
 			}
 
-			fmt.Println("\n Daemon:")
-			daemon, err := client.Daemon.Query().Only(ctx)
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+			fmt.Println("\nDaemon:")
+			if getUser.Edges.Daemon != nil {
+				fmt.Fprintf(w, "%s\t%v\n", "Enabled", getUser.Edges.Daemon.Enable)
+				fmt.Fprintf(w, "%s\t%s\n", "Path", getUser.Edges.Daemon.Path)
+				w.Flush()
 			}
-			fmt.Fprintf(w, "%s\t%s\n", "Enabled", daemon.Enable)
-			fmt.Fprintf(w, "%s\t%s\n", "Path", daemon.Path)
-			w.Flush()
 		}
 
 		fmt.Println("\n ")
@@ -122,14 +103,4 @@ var statusCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// statusCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// statusCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -45,8 +45,8 @@ var (
 	ProvidersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
-		{Name: "version", Type: field.TypeString},
-		{Name: "path", Type: field.TypeString},
+		{Name: "version", Type: field.TypeString, Nullable: true},
+		{Name: "path", Type: field.TypeString, Nullable: true},
 	}
 	// ProvidersTable holds the schema information for the "providers" table.
 	ProvidersTable = &schema.Table{
@@ -79,8 +79,6 @@ var (
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
-		{Name: "active", Type: field.TypeBool, Default: true},
 		{Name: "daemon_user", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "provider_user", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "subscribe_user", Type: field.TypeInt, Unique: true, Nullable: true},
@@ -93,19 +91,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_daemons_user",
-				Columns:    []*schema.Column{UsersColumns[3]},
+				Columns:    []*schema.Column{UsersColumns[1]},
 				RefColumns: []*schema.Column{DaemonsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_providers_user",
-				Columns:    []*schema.Column{UsersColumns[4]},
+				Columns:    []*schema.Column{UsersColumns[2]},
 				RefColumns: []*schema.Column{ProvidersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_subscribes_user",
-				Columns:    []*schema.Column{UsersColumns[5]},
+				Columns:    []*schema.Column{UsersColumns[3]},
 				RefColumns: []*schema.Column{SubscribesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

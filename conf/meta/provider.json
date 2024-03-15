@@ -2,11 +2,16 @@
   {
     "repo": "sing-box",
     "owner": "SagerNet",
-    "version": "v1.9.0-alpha.15"
+    "version": [
+      "v1.9.0-alpha.15",
+      "v1.8.8"
+    ]
   },
   {
     "repo": "mihomo",
     "owner": "MetaCubeX",
-    "version": "v1.18.1"
+    "version": [
+      "v1.18.1"
+    ]
   }
 ]

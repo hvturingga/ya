@@ -12,10 +12,6 @@ const (
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldName holds the string denoting the name field in the database.
-	FieldName = "name"
-	// FieldActive holds the string denoting the active field in the database.
-	FieldActive = "active"
 	// EdgeProvider holds the string denoting the provider edge name in mutations.
 	EdgeProvider = "provider"
 	// EdgeSubscribe holds the string denoting the subscribe edge name in mutations.
@@ -50,8 +46,6 @@ const (
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
-	FieldName,
-	FieldActive,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "users"
@@ -77,27 +71,12 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-var (
-	// DefaultActive holds the default value on creation for the "active" field.
-	DefaultActive bool
-)
-
 // OrderOption defines the ordering options for the User queries.
 type OrderOption func(*sql.Selector)
 
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByName orders the results by the name field.
-func ByName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldName, opts...).ToFunc()
-}
-
-// ByActive orders the results by the active field.
-func ByActive(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldActive, opts...).ToFunc()
 }
 
 // ByProviderField orders the results by provider field.

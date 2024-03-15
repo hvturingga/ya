@@ -53,6 +53,7 @@ print:
 
 include $(MK_FILES)
 
+
 clean:
 	@rm -rf $(BUILD_PATH)
 	@rm -rf $(RELEASE_PATH)
@@ -91,6 +92,9 @@ $(DAEMON_TARGETS): build-daemon-%:
 package-cli:
 	@mkdir -p $(RELEASE_PATH)
 	$(foreach osarch,$(OS_ARCH),$(call package,$(osarch));)
+package-cli:
+	@mkdir -p $(RELEASE_PATH)
+	$(foreach osarch,$(OS_ARCH),$(call package,$(osarch));)
 
 define package
 	$(eval OS=$(word 1,$(subst /, ,$1)))
@@ -101,14 +105,14 @@ define package
 	$(eval PACKAGE_PATH=$(RELEASE_PATH)/$(PACKAGE_NAME))
 	@if [ "$(OS)" = "windows" ]; then \
 		mkdir -p $(PACKAGE_PATH) && \
-		cp $(BUILD_PATH)/$(TARGET) $(PACKAGE_PATH) && \
+		cp $(BUILD_PATH)/$(TARGET) $(PACKAGE_PATH)/ya$(EXT) && \
 		cp $(LICENSE_FILE) $(PACKAGE_PATH) && \
 		cd $(RELEASE_PATH) && \
 		zip -r $(PACKAGE_NAME).zip $(PACKAGE_NAME) && \
 		cd $(FSPATH); \
 	else \
 		mkdir -p $(PACKAGE_PATH) && \
-		cp $(BUILD_PATH)/$(TARGET) $(PACKAGE_PATH) && \
+		cp $(BUILD_PATH)/$(TARGET) $(PACKAGE_PATH)/ya && \
 		cp $(LICENSE_FILE) $(PACKAGE_PATH) && \
 		cd $(RELEASE_PATH) && \
 		tar -czvf $(PACKAGE_NAME).tar.gz $(PACKAGE_NAME) && \

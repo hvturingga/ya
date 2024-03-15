@@ -16,13 +16,9 @@ import (
 
 // User is the model entity for the User schema.
 type User struct {
-	config `json:"-"`
+	config
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
-	// Active holds the value of the "active" field.
-	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges          UserEdges `json:"edges"`
@@ -89,12 +85,8 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldActive:
-			values[i] = new(sql.NullBool)
 		case user.FieldID:
 			values[i] = new(sql.NullInt64)
-		case user.FieldName:
-			values[i] = new(sql.NullString)
 		case user.ForeignKeys[0]: // daemon_user
 			values[i] = new(sql.NullInt64)
 		case user.ForeignKeys[1]: // provider_user
@@ -122,18 +114,6 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			u.ID = int(value.Int64)
-		case user.FieldName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
-			} else if value.Valid {
-				u.Name = value.String
-			}
-		case user.FieldActive:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field active", values[i])
-			} else if value.Valid {
-				u.Active = value.Bool
-			}
 		case user.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field daemon_user", value)
@@ -205,12 +185,7 @@ func (u *User) Unwrap() *User {
 func (u *User) String() string {
 	var builder strings.Builder
 	builder.WriteString("User(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", u.ID))
-	builder.WriteString("name=")
-	builder.WriteString(u.Name)
-	builder.WriteString(", ")
-	builder.WriteString("active=")
-	builder.WriteString(fmt.Sprintf("%v", u.Active))
+	builder.WriteString(fmt.Sprintf("id=%v", u.ID))
 	builder.WriteByte(')')
 	return builder.String()
 }

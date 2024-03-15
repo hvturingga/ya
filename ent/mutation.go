@@ -1113,9 +1113,22 @@ func (m *ProviderMutation) OldVersion(ctx context.Context) (v string, err error)
 	return oldValue.Version, nil
 }
 
+// ClearVersion clears the value of the "version" field.
+func (m *ProviderMutation) ClearVersion() {
+	m.version = nil
+	m.clearedFields[provider.FieldVersion] = struct{}{}
+}
+
+// VersionCleared returns if the "version" field was cleared in this mutation.
+func (m *ProviderMutation) VersionCleared() bool {
+	_, ok := m.clearedFields[provider.FieldVersion]
+	return ok
+}
+
 // ResetVersion resets all changes to the "version" field.
 func (m *ProviderMutation) ResetVersion() {
 	m.version = nil
+	delete(m.clearedFields, provider.FieldVersion)
 }
 
 // SetPath sets the "path" field.
@@ -1149,9 +1162,22 @@ func (m *ProviderMutation) OldPath(ctx context.Context) (v string, err error) {
 	return oldValue.Path, nil
 }
 
+// ClearPath clears the value of the "path" field.
+func (m *ProviderMutation) ClearPath() {
+	m._path = nil
+	m.clearedFields[provider.FieldPath] = struct{}{}
+}
+
+// PathCleared returns if the "path" field was cleared in this mutation.
+func (m *ProviderMutation) PathCleared() bool {
+	_, ok := m.clearedFields[provider.FieldPath]
+	return ok
+}
+
 // ResetPath resets all changes to the "path" field.
 func (m *ProviderMutation) ResetPath() {
 	m._path = nil
+	delete(m.clearedFields, provider.FieldPath)
 }
 
 // AddSubscribeIDs adds the "subscribes" edge to the Subscribe entity by ids.
@@ -1379,7 +1405,14 @@ func (m *ProviderMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ProviderMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(provider.FieldVersion) {
+		fields = append(fields, provider.FieldVersion)
+	}
+	if m.FieldCleared(provider.FieldPath) {
+		fields = append(fields, provider.FieldPath)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1392,6 +1425,14 @@ func (m *ProviderMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ProviderMutation) ClearField(name string) error {
+	switch name {
+	case provider.FieldVersion:
+		m.ClearVersion()
+		return nil
+	case provider.FieldPath:
+		m.ClearPath()
+		return nil
+	}
 	return fmt.Errorf("unknown Provider nullable field %s", name)
 }
 
@@ -2187,8 +2228,6 @@ type UserMutation struct {
 	op               Op
 	typ              string
 	id               *int
-	name             *string
-	active           *bool
 	clearedFields    map[string]struct{}
 	provider         *int
 	clearedprovider  bool
@@ -2297,78 +2336,6 @@ func (m *UserMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetName sets the "name" field.
-func (m *UserMutation) SetName(s string) {
-	m.name = &s
-}
-
-// Name returns the value of the "name" field in the mutation.
-func (m *UserMutation) Name() (r string, exists bool) {
-	v := m.name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldName returns the old "name" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
-	}
-	return oldValue.Name, nil
-}
-
-// ResetName resets all changes to the "name" field.
-func (m *UserMutation) ResetName() {
-	m.name = nil
-}
-
-// SetActive sets the "active" field.
-func (m *UserMutation) SetActive(b bool) {
-	m.active = &b
-}
-
-// Active returns the value of the "active" field in the mutation.
-func (m *UserMutation) Active() (r bool, exists bool) {
-	v := m.active
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldActive returns the old "active" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldActive(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldActive is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldActive requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldActive: %w", err)
-	}
-	return oldValue.Active, nil
-}
-
-// ResetActive resets all changes to the "active" field.
-func (m *UserMutation) ResetActive() {
-	m.active = nil
 }
 
 // SetProviderID sets the "provider" edge to the Provider entity by id.
@@ -2522,13 +2489,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 2)
-	if m.name != nil {
-		fields = append(fields, user.FieldName)
-	}
-	if m.active != nil {
-		fields = append(fields, user.FieldActive)
-	}
+	fields := make([]string, 0, 0)
 	return fields
 }
 
@@ -2536,12 +2497,6 @@ func (m *UserMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *UserMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case user.FieldName:
-		return m.Name()
-	case user.FieldActive:
-		return m.Active()
-	}
 	return nil, false
 }
 
@@ -2549,12 +2504,6 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case user.FieldName:
-		return m.OldName(ctx)
-	case user.FieldActive:
-		return m.OldActive(ctx)
-	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
 
@@ -2563,20 +2512,6 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 // type.
 func (m *UserMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case user.FieldName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetName(v)
-		return nil
-	case user.FieldActive:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetActive(v)
-		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -2598,8 +2533,6 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *UserMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown User numeric field %s", name)
 }
 
@@ -2625,14 +2558,6 @@ func (m *UserMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *UserMutation) ResetField(name string) error {
-	switch name {
-	case user.FieldName:
-		m.ResetName()
-		return nil
-	case user.FieldActive:
-		m.ResetActive()
-		return nil
-	}
 	return fmt.Errorf("unknown User field %s", name)
 }
 

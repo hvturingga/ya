@@ -36,14 +36,6 @@ func (su *SubscribeUpdate) SetName(s string) *SubscribeUpdate {
 	return su
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (su *SubscribeUpdate) SetNillableName(s *string) *SubscribeUpdate {
-	if s != nil {
-		su.SetName(*s)
-	}
-	return su
-}
-
 // SetLink sets the "link" field.
 func (su *SubscribeUpdate) SetLink(s string) *SubscribeUpdate {
 	su.mutation.SetLink(s)
@@ -67,14 +59,6 @@ func (su *SubscribeUpdate) ClearLink() *SubscribeUpdate {
 // SetConf sets the "conf" field.
 func (su *SubscribeUpdate) SetConf(s string) *SubscribeUpdate {
 	su.mutation.SetConf(s)
-	return su
-}
-
-// SetNillableConf sets the "conf" field if the given value is not nil.
-func (su *SubscribeUpdate) SetNillableConf(s *string) *SubscribeUpdate {
-	if s != nil {
-		su.SetConf(*s)
-	}
 	return su
 }
 
@@ -364,14 +348,6 @@ func (suo *SubscribeUpdateOne) SetName(s string) *SubscribeUpdateOne {
 	return suo
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (suo *SubscribeUpdateOne) SetNillableName(s *string) *SubscribeUpdateOne {
-	if s != nil {
-		suo.SetName(*s)
-	}
-	return suo
-}
-
 // SetLink sets the "link" field.
 func (suo *SubscribeUpdateOne) SetLink(s string) *SubscribeUpdateOne {
 	suo.mutation.SetLink(s)
@@ -395,14 +371,6 @@ func (suo *SubscribeUpdateOne) ClearLink() *SubscribeUpdateOne {
 // SetConf sets the "conf" field.
 func (suo *SubscribeUpdateOne) SetConf(s string) *SubscribeUpdateOne {
 	suo.mutation.SetConf(s)
-	return suo
-}
-
-// SetNillableConf sets the "conf" field if the given value is not nil.
-func (suo *SubscribeUpdateOne) SetNillableConf(s *string) *SubscribeUpdateOne {
-	if s != nil {
-		suo.SetConf(*s)
-	}
 	return suo
 }
 

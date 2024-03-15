@@ -19,10 +19,10 @@ func (Provider) Fields() []ent.Field {
 			NotEmpty(),
 		field.
 			String("version").
-			NotEmpty(),
+			Optional(),
 		field.
 			String("path").
-			NotEmpty(),
+			Optional(),
 	}
 }
 

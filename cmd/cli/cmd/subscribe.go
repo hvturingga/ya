@@ -3,13 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/hvturingga/ya/cmd/cli/internal/subscribe"
+	"github.com/hvturingga/ya/cmd/cli/internal"
 	"github.com/hvturingga/ya/ent"
 	"github.com/hvturingga/ya/ent/provider"
 	S "github.com/hvturingga/ya/ent/subscribe"
-	"github.com/hvturingga/ya/ent/user"
 	"github.com/hvturingga/ya/internal/entclient"
-	"github.com/hvturingga/ya/internal/ya"
 	"net/url"
 	"os"
 	"strconv"
@@ -31,14 +29,13 @@ var listSubscribeCmd = &cobra.Command{
 	Use:     "list --id <id>",
 	Short:   "List subscriptions.",
 	Aliases: []string{"ls", "l"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		ctx := context.Background()
 
 		client, err := entclient.New()
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 		defer client.Close()
 
@@ -46,8 +43,7 @@ var listSubscribeCmd = &cobra.Command{
 		if strings.TrimSpace(id) != "" {
 			i, err := strconv.Atoi(id)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				return err
 			}
 
 			sub, err := client.Subscribe.Query().
@@ -56,8 +52,7 @@ var listSubscribeCmd = &cobra.Command{
 				).
 				Only(ctx)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				return err
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
@@ -67,28 +62,21 @@ var listSubscribeCmd = &cobra.Command{
 			w.Flush()
 
 		} else {
-			U, err := client.User.Query().
-				Where(
-					user.NameEQ(ya.GetUser()),
-				).
-				WithProvider().
-				WithSubscribe().
-				Only(ctx)
+			getUser, err := internal.GetUser(ctx, client)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				return err
 			}
-			if U.Edges.Provider == nil {
+
+			if getUser.Edges.Provider == nil {
 				fmt.Println("No provider found, please add one.")
 				os.Exit(1)
-				return
 			}
 
 			all, err := client.Subscribe.Query().
 				Where(
 					S.HasProviderWith(
 						provider.IDEQ(
-							U.Edges.Provider.ID,
+							getUser.Edges.Provider.ID,
 						),
 					),
 				).
@@ -101,7 +89,7 @@ var listSubscribeCmd = &cobra.Command{
 
 			fmt.Fprintf(w, "%s\t%s\t%s\n", "ID", "Name", "Now")
 			for _, sub := range all {
-				if U.Edges.Subscribe != nil && sub.ID == U.Edges.Subscribe.ID {
+				if getUser.Edges.Subscribe != nil && sub.ID == getUser.Edges.Subscribe.ID {
 					fmt.Fprintf(w, "%d\t%s\t%s\n", sub.ID, sub.Name, "✔")
 				} else {
 					fmt.Fprintf(w, "%d\t%s\t%s\n", sub.ID, sub.Name, " ")
@@ -109,6 +97,7 @@ var listSubscribeCmd = &cobra.Command{
 			}
 			w.Flush()
 		}
+		return err
 	},
 }
 
@@ -117,7 +106,7 @@ var addSubscribeCmd = &cobra.Command{
 	Short:   "Add a new subscription.",
 	Aliases: []string{"a"},
 	Args:    cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 		if len(name) > 24 {
 			fmt.Println("Error: The name cannot be more than 24 characters long.")
@@ -139,18 +128,9 @@ var addSubscribeCmd = &cobra.Command{
 
 		ctx := context.Background()
 
-		query, err := client.User.Query().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			WithProvider().
-			WithSubscribe().
-			Only(ctx)
+		getUser, err := internal.GetUser(ctx, client)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		sub := client.Subscribe.Query()
@@ -159,7 +139,7 @@ var addSubscribeCmd = &cobra.Command{
 				S.NameEQ(name),
 				S.HasProviderWith(
 					provider.IDEQ(
-						query.Edges.Provider.ID,
+						getUser.Edges.Provider.ID,
 					),
 				),
 			).
@@ -183,13 +163,13 @@ var addSubscribeCmd = &cobra.Command{
 				fmt.Println("The link must be a valid URL")
 				os.Exit(1)
 			}
-			path = subscribe.Fetch(link)
+			path = internal.SubscribeFetch(link)
 		}
 
 		create, err := client.Subscribe.Create().
 			SetName(name).
 			SetLink(link).
-			SetProvider(query.Edges.Provider).
+			SetProvider(getUser.Edges.Provider).
 			SetConf(path).
 			Save(ctx)
 		if err != nil {
@@ -197,10 +177,11 @@ var addSubscribeCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if query.Edges.Subscribe == nil {
+		if getUser.Edges.Subscribe == nil {
 			client.User.Update().SetSubscribe(create).ExecX(ctx)
 		}
 		listSubscribeCmd.Run(cmd, args)
+		return nil
 	},
 }
 
@@ -209,7 +190,7 @@ var removeSubscribeCmd = &cobra.Command{
 	Short:   "Remove a subscription.",
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"rm", "r", "delete", "d"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Removing subscription with id %s\n", args[0])
 
 		client, err := entclient.New()
@@ -225,15 +206,13 @@ var removeSubscribeCmd = &cobra.Command{
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
 		}
-		client.User.Query().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-				user.HasSubscribeWith(
-					S.IDEQ(rid),
-				),
-			).
+
+		getUser, err := internal.GetUser(ctx, client)
+		if err != nil {
+			return err
+		}
+
+		getUser.
 			QuerySubscribe().
 			OnlyX(ctx)
 		if err != nil {
@@ -246,6 +225,7 @@ var removeSubscribeCmd = &cobra.Command{
 		}
 		client.Subscribe.DeleteOneID(rid).ExecX(ctx)
 		listSubscribeCmd.Run(cmd, args)
+		return nil
 	},
 }
 
@@ -254,7 +234,7 @@ var editSubscribeCmd = &cobra.Command{
 	Short:   "Edit a subscription.",
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"e"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
 		link, _ := cmd.Flags().GetString("link")
 		path, _ := cmd.Flags().GetString("path")
@@ -280,24 +260,17 @@ var editSubscribeCmd = &cobra.Command{
 
 		ctx := context.Background()
 
-		query, err := client.User.Query().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			QueryProvider().
-			Only(ctx)
+		getUser, err := internal.GetUser(ctx, client)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
+
 		edit := client.Subscribe.
 			Update().
 			Where(
 				S.IDEQ(eid),
 				S.HasProviderWith(
-					provider.IDEQ(query.ID),
+					provider.IDEQ(getUser.Edges.Provider.ID),
 				),
 			)
 		if strings.TrimSpace(name) != "" {
@@ -319,6 +292,7 @@ var editSubscribeCmd = &cobra.Command{
 		}
 		edit.ExecX(ctx)
 		listSubscribeCmd.Run(cmd, args)
+		return nil
 	},
 }
 
@@ -326,7 +300,7 @@ var switchSubscribeCmd = &cobra.Command{
 	Use:     "switch --id <id>",
 	Short:   "Switch subscription.",
 	Aliases: []string{"s"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		client, err := entclient.New()
 		if err != nil {
@@ -336,17 +310,12 @@ var switchSubscribeCmd = &cobra.Command{
 		defer client.Close()
 		ctx := context.Background()
 
-		U, err := client.User.Query().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			WithProvider().
-			WithSubscribe().
-			Only(ctx)
+		getUser, err := internal.GetUser(ctx, client)
+		if err != nil {
+			return err
+		}
 
-		if U.Edges.Provider == nil {
+		if getUser.Edges.Provider == nil {
 			fmt.Println("No provider found, please add one.")
 			os.Exit(1)
 		}
@@ -359,7 +328,7 @@ var switchSubscribeCmd = &cobra.Command{
 				fmt.Printf("Error: %v\n", err)
 				os.Exit(1)
 			}
-			exist, err := U.QueryProvider().
+			exist, err := getUser.QueryProvider().
 				QuerySubscribes().
 				Where(
 					S.IDEQ(i),
@@ -375,7 +344,7 @@ var switchSubscribeCmd = &cobra.Command{
 			}
 			sid = i
 		} else {
-			subscribes, err := U.QueryProvider().QuerySubscribes().All(ctx)
+			subscribes, err := getUser.QueryProvider().QuerySubscribes().All(ctx)
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
 				os.Exit(1)
@@ -385,7 +354,7 @@ var switchSubscribeCmd = &cobra.Command{
 
 				fmt.Fprintf(w, "%s\t%s\t%s\t\n", "ID", "Name", "Now")
 				for _, sub := range subscribes {
-					if U.Edges.Subscribe != nil && sub.ID == U.Edges.Subscribe.ID {
+					if getUser.Edges.Subscribe != nil && sub.ID == getUser.Edges.Subscribe.ID {
 						fmt.Fprintf(w, "%d\t%s\t%s\n", sub.ID, sub.Name, "✔")
 					} else {
 						fmt.Fprintf(w, "%d\t%s\t%s\n", sub.ID, sub.Name, " ")
@@ -428,19 +397,14 @@ var switchSubscribeCmd = &cobra.Command{
 
 		}
 
-		if U.Edges.Subscribe != nil {
-			if U.Edges.Subscribe.ID == sid {
+		if getUser.Edges.Subscribe != nil {
+			if getUser.Edges.Subscribe.ID == sid {
 				fmt.Println("The subscription is in use.")
 				os.Exit(0)
 			}
 		}
 
-		U.Update().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
+		getUser.Update().
 			SetSubscribeID(sid).
 			ExecX(ctx)
 
@@ -448,13 +412,15 @@ var switchSubscribeCmd = &cobra.Command{
 		fmt.Println("OK!")
 
 		listSubscribeCmd.Run(cmd, args)
+
+		return nil
 	},
 }
 
 var syncSubscribeCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Synchronize the current subscription.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := entclient.New()
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
@@ -464,25 +430,18 @@ var syncSubscribeCmd = &cobra.Command{
 
 		ctx := context.Background()
 
-		query, err := client.User.Query().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			WithSubscribe().
-			WithProvider().
-			Only(ctx)
+		getUser, err := internal.GetUser(ctx, client)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
-		if query.Edges.Subscribe != nil {
-			subscribe.Fetch(query.Edges.Subscribe.Link)
+
+		if getUser.Edges.Subscribe != nil {
+			internal.SubscribeFetch(getUser.Edges.Subscribe.Link)
 		} else {
 			fmt.Println("No subscription found")
 			os.Exit(1)
 		}
+		return nil
 	},
 }
 

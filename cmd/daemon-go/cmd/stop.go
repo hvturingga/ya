@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/hvturingga/ya/cmd/daemon-go/adapter"
-	U "github.com/hvturingga/ya/ent/user"
 	"github.com/hvturingga/ya/internal/entclient"
-	"github.com/hvturingga/ya/internal/ya"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -25,13 +23,8 @@ var stopCmd = &cobra.Command{
 		}
 		defer client.Close()
 
-		user := client.User.Query().Where(
-			U.NameEQ(
-				ya.GetUser(),
-			),
-		).
-			OnlyX(ctx)
-		adapter.NewAdapter(ctx, user).Stop()
+		getUser := client.User.Query().WithProvider().WithSubscribe().WithDaemon().FirstX(ctx)
+		adapter.NewAdapter(ctx, getUser).Stop()
 	},
 }
 

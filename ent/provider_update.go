@@ -35,14 +35,6 @@ func (pu *ProviderUpdate) SetName(s string) *ProviderUpdate {
 	return pu
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (pu *ProviderUpdate) SetNillableName(s *string) *ProviderUpdate {
-	if s != nil {
-		pu.SetName(*s)
-	}
-	return pu
-}
-
 // SetVersion sets the "version" field.
 func (pu *ProviderUpdate) SetVersion(s string) *ProviderUpdate {
 	pu.mutation.SetVersion(s)
@@ -57,6 +49,12 @@ func (pu *ProviderUpdate) SetNillableVersion(s *string) *ProviderUpdate {
 	return pu
 }
 
+// ClearVersion clears the value of the "version" field.
+func (pu *ProviderUpdate) ClearVersion() *ProviderUpdate {
+	pu.mutation.ClearVersion()
+	return pu
+}
+
 // SetPath sets the "path" field.
 func (pu *ProviderUpdate) SetPath(s string) *ProviderUpdate {
 	pu.mutation.SetPath(s)
@@ -68,6 +66,12 @@ func (pu *ProviderUpdate) SetNillablePath(s *string) *ProviderUpdate {
 	if s != nil {
 		pu.SetPath(*s)
 	}
+	return pu
+}
+
+// ClearPath clears the value of the "path" field.
+func (pu *ProviderUpdate) ClearPath() *ProviderUpdate {
+	pu.mutation.ClearPath()
 	return pu
 }
 
@@ -171,16 +175,6 @@ func (pu *ProviderUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Provider.name": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.Version(); ok {
-		if err := provider.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Provider.version": %w`, err)}
-		}
-	}
-	if v, ok := pu.mutation.Path(); ok {
-		if err := provider.PathValidator(v); err != nil {
-			return &ValidationError{Name: "path", err: fmt.Errorf(`ent: validator failed for field "Provider.path": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -202,8 +196,14 @@ func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.Version(); ok {
 		_spec.SetField(provider.FieldVersion, field.TypeString, value)
 	}
+	if pu.mutation.VersionCleared() {
+		_spec.ClearField(provider.FieldVersion, field.TypeString)
+	}
 	if value, ok := pu.mutation.Path(); ok {
 		_spec.SetField(provider.FieldPath, field.TypeString, value)
+	}
+	if pu.mutation.PathCleared() {
+		_spec.ClearField(provider.FieldPath, field.TypeString)
 	}
 	if pu.mutation.SubscribesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -305,14 +305,6 @@ func (puo *ProviderUpdateOne) SetName(s string) *ProviderUpdateOne {
 	return puo
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (puo *ProviderUpdateOne) SetNillableName(s *string) *ProviderUpdateOne {
-	if s != nil {
-		puo.SetName(*s)
-	}
-	return puo
-}
-
 // SetVersion sets the "version" field.
 func (puo *ProviderUpdateOne) SetVersion(s string) *ProviderUpdateOne {
 	puo.mutation.SetVersion(s)
@@ -327,6 +319,12 @@ func (puo *ProviderUpdateOne) SetNillableVersion(s *string) *ProviderUpdateOne {
 	return puo
 }
 
+// ClearVersion clears the value of the "version" field.
+func (puo *ProviderUpdateOne) ClearVersion() *ProviderUpdateOne {
+	puo.mutation.ClearVersion()
+	return puo
+}
+
 // SetPath sets the "path" field.
 func (puo *ProviderUpdateOne) SetPath(s string) *ProviderUpdateOne {
 	puo.mutation.SetPath(s)
@@ -338,6 +336,12 @@ func (puo *ProviderUpdateOne) SetNillablePath(s *string) *ProviderUpdateOne {
 	if s != nil {
 		puo.SetPath(*s)
 	}
+	return puo
+}
+
+// ClearPath clears the value of the "path" field.
+func (puo *ProviderUpdateOne) ClearPath() *ProviderUpdateOne {
+	puo.mutation.ClearPath()
 	return puo
 }
 
@@ -454,16 +458,6 @@ func (puo *ProviderUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Provider.name": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.Version(); ok {
-		if err := provider.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Provider.version": %w`, err)}
-		}
-	}
-	if v, ok := puo.mutation.Path(); ok {
-		if err := provider.PathValidator(v); err != nil {
-			return &ValidationError{Name: "path", err: fmt.Errorf(`ent: validator failed for field "Provider.path": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -502,8 +496,14 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 	if value, ok := puo.mutation.Version(); ok {
 		_spec.SetField(provider.FieldVersion, field.TypeString, value)
 	}
+	if puo.mutation.VersionCleared() {
+		_spec.ClearField(provider.FieldVersion, field.TypeString)
+	}
 	if value, ok := puo.mutation.Path(); ok {
 		_spec.SetField(provider.FieldPath, field.TypeString, value)
+	}
+	if puo.mutation.PathCleared() {
+		_spec.ClearField(provider.FieldPath, field.TypeString)
 	}
 	if puo.mutation.SubscribesCleared() {
 		edge := &sqlgraph.EdgeSpec{

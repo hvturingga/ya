@@ -5,12 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hvturingga/ya/cmd/cli/internal"
 	"github.com/hvturingga/ya/conf"
 	"github.com/hvturingga/ya/ent/node"
-	"github.com/hvturingga/ya/ent/user"
 	"github.com/hvturingga/ya/internal/entclient"
 	"github.com/hvturingga/ya/internal/nodeswitch"
-	"github.com/hvturingga/ya/internal/ya"
 	"github.com/spf13/cobra"
 	"io"
 	"net/http"
@@ -392,14 +391,12 @@ var nodeSwitchCmd = &cobra.Command{
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			subscribe := client.User.Query().
-				Where(
-					user.NameEQ(
-						ya.GetUser(),
-					),
-				).
-				QuerySubscribe().
-				OnlyX(ctx)
+			getUser, err := internal.GetUser(ctx, client)
+			if err != nil {
+				return
+			}
+
+			subscribe := getUser.QuerySubscribe().OnlyX(ctx)
 
 			exist := subscribe.
 				QueryNodes().

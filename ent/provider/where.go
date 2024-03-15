@@ -188,6 +188,16 @@ func VersionHasSuffix(v string) predicate.Provider {
 	return predicate.Provider(sql.FieldHasSuffix(FieldVersion, v))
 }
 
+// VersionIsNil applies the IsNil predicate on the "version" field.
+func VersionIsNil() predicate.Provider {
+	return predicate.Provider(sql.FieldIsNull(FieldVersion))
+}
+
+// VersionNotNil applies the NotNil predicate on the "version" field.
+func VersionNotNil() predicate.Provider {
+	return predicate.Provider(sql.FieldNotNull(FieldVersion))
+}
+
 // VersionEqualFold applies the EqualFold predicate on the "version" field.
 func VersionEqualFold(v string) predicate.Provider {
 	return predicate.Provider(sql.FieldEqualFold(FieldVersion, v))
@@ -251,6 +261,16 @@ func PathHasPrefix(v string) predicate.Provider {
 // PathHasSuffix applies the HasSuffix predicate on the "path" field.
 func PathHasSuffix(v string) predicate.Provider {
 	return predicate.Provider(sql.FieldHasSuffix(FieldPath, v))
+}
+
+// PathIsNil applies the IsNil predicate on the "path" field.
+func PathIsNil() predicate.Provider {
+	return predicate.Provider(sql.FieldIsNull(FieldPath))
+}
+
+// PathNotNil applies the NotNil predicate on the "path" field.
+func PathNotNil() predicate.Provider {
+	return predicate.Provider(sql.FieldNotNull(FieldPath))
 }
 
 // PathEqualFold applies the EqualFold predicate on the "path" field.

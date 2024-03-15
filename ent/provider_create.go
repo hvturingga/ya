@@ -33,9 +33,25 @@ func (pc *ProviderCreate) SetVersion(s string) *ProviderCreate {
 	return pc
 }
 
+// SetNillableVersion sets the "version" field if the given value is not nil.
+func (pc *ProviderCreate) SetNillableVersion(s *string) *ProviderCreate {
+	if s != nil {
+		pc.SetVersion(*s)
+	}
+	return pc
+}
+
 // SetPath sets the "path" field.
 func (pc *ProviderCreate) SetPath(s string) *ProviderCreate {
 	pc.mutation.SetPath(s)
+	return pc
+}
+
+// SetNillablePath sets the "path" field if the given value is not nil.
+func (pc *ProviderCreate) SetNillablePath(s *string) *ProviderCreate {
+	if s != nil {
+		pc.SetPath(*s)
+	}
 	return pc
 }
 
@@ -113,22 +129,6 @@ func (pc *ProviderCreate) check() error {
 	if v, ok := pc.mutation.Name(); ok {
 		if err := provider.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Provider.name": %w`, err)}
-		}
-	}
-	if _, ok := pc.mutation.Version(); !ok {
-		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Provider.version"`)}
-	}
-	if v, ok := pc.mutation.Version(); ok {
-		if err := provider.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Provider.version": %w`, err)}
-		}
-	}
-	if _, ok := pc.mutation.Path(); !ok {
-		return &ValidationError{Name: "path", err: errors.New(`ent: missing required field "Provider.path"`)}
-	}
-	if v, ok := pc.mutation.Path(); ok {
-		if err := provider.PathValidator(v); err != nil {
-			return &ValidationError{Name: "path", err: fmt.Errorf(`ent: validator failed for field "Provider.path": %w`, err)}
 		}
 	}
 	return nil

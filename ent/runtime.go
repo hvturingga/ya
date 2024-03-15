@@ -7,7 +7,6 @@ import (
 	"github.com/hvturingga/ya/ent/provider"
 	"github.com/hvturingga/ya/ent/schema"
 	"github.com/hvturingga/ya/ent/subscribe"
-	"github.com/hvturingga/ya/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -26,14 +25,6 @@ func init() {
 	providerDescName := providerFields[0].Descriptor()
 	// provider.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	provider.NameValidator = providerDescName.Validators[0].(func(string) error)
-	// providerDescVersion is the schema descriptor for version field.
-	providerDescVersion := providerFields[1].Descriptor()
-	// provider.VersionValidator is a validator for the "version" field. It is called by the builders before save.
-	provider.VersionValidator = providerDescVersion.Validators[0].(func(string) error)
-	// providerDescPath is the schema descriptor for path field.
-	providerDescPath := providerFields[2].Descriptor()
-	// provider.PathValidator is a validator for the "path" field. It is called by the builders before save.
-	provider.PathValidator = providerDescPath.Validators[0].(func(string) error)
 	subscribeFields := schema.Subscribe{}.Fields()
 	_ = subscribeFields
 	// subscribeDescName is the schema descriptor for name field.
@@ -58,10 +49,4 @@ func init() {
 	subscribeDescConf := subscribeFields[2].Descriptor()
 	// subscribe.ConfValidator is a validator for the "conf" field. It is called by the builders before save.
 	subscribe.ConfValidator = subscribeDescConf.Validators[0].(func(string) error)
-	userFields := schema.User{}.Fields()
-	_ = userFields
-	// userDescActive is the schema descriptor for active field.
-	userDescActive := userFields[1].Descriptor()
-	// user.DefaultActive holds the default value on creation for the active field.
-	user.DefaultActive = userDescActive.Default.(bool)
 }

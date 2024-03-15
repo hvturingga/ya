@@ -34,25 +34,9 @@ func (nu *NodeUpdate) SetGroup(s string) *NodeUpdate {
 	return nu
 }
 
-// SetNillableGroup sets the "group" field if the given value is not nil.
-func (nu *NodeUpdate) SetNillableGroup(s *string) *NodeUpdate {
-	if s != nil {
-		nu.SetGroup(*s)
-	}
-	return nu
-}
-
 // SetName sets the "name" field.
 func (nu *NodeUpdate) SetName(s string) *NodeUpdate {
 	nu.mutation.SetName(s)
-	return nu
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (nu *NodeUpdate) SetNillableName(s *string) *NodeUpdate {
-	if s != nil {
-		nu.SetName(*s)
-	}
 	return nu
 }
 
@@ -183,25 +167,9 @@ func (nuo *NodeUpdateOne) SetGroup(s string) *NodeUpdateOne {
 	return nuo
 }
 
-// SetNillableGroup sets the "group" field if the given value is not nil.
-func (nuo *NodeUpdateOne) SetNillableGroup(s *string) *NodeUpdateOne {
-	if s != nil {
-		nuo.SetGroup(*s)
-	}
-	return nuo
-}
-
 // SetName sets the "name" field.
 func (nuo *NodeUpdateOne) SetName(s string) *NodeUpdateOne {
 	nuo.mutation.SetName(s)
-	return nuo
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (nuo *NodeUpdateOne) SetNillableName(s *string) *NodeUpdateOne {
-	if s != nil {
-		nuo.SetName(*s)
-	}
 	return nuo
 }
 

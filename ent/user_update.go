@@ -30,34 +30,6 @@ func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
 	return uu
 }
 
-// SetName sets the "name" field.
-func (uu *UserUpdate) SetName(s string) *UserUpdate {
-	uu.mutation.SetName(s)
-	return uu
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableName(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetName(*s)
-	}
-	return uu
-}
-
-// SetActive sets the "active" field.
-func (uu *UserUpdate) SetActive(b bool) *UserUpdate {
-	uu.mutation.SetActive(b)
-	return uu
-}
-
-// SetNillableActive sets the "active" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableActive(b *bool) *UserUpdate {
-	if b != nil {
-		uu.SetActive(*b)
-	}
-	return uu
-}
-
 // SetProviderID sets the "provider" edge to the Provider entity by ID.
 func (uu *UserUpdate) SetProviderID(id int) *UserUpdate {
 	uu.mutation.SetProviderID(id)
@@ -174,12 +146,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := uu.mutation.Name(); ok {
-		_spec.SetField(user.FieldName, field.TypeString, value)
-	}
-	if value, ok := uu.mutation.Active(); ok {
-		_spec.SetField(user.FieldActive, field.TypeBool, value)
-	}
 	if uu.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -285,34 +251,6 @@ type UserUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *UserMutation
-}
-
-// SetName sets the "name" field.
-func (uuo *UserUpdateOne) SetName(s string) *UserUpdateOne {
-	uuo.mutation.SetName(s)
-	return uuo
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableName(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetName(*s)
-	}
-	return uuo
-}
-
-// SetActive sets the "active" field.
-func (uuo *UserUpdateOne) SetActive(b bool) *UserUpdateOne {
-	uuo.mutation.SetActive(b)
-	return uuo
-}
-
-// SetNillableActive sets the "active" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableActive(b *bool) *UserUpdateOne {
-	if b != nil {
-		uuo.SetActive(*b)
-	}
-	return uuo
 }
 
 // SetProviderID sets the "provider" edge to the Provider entity by ID.
@@ -460,12 +398,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := uuo.mutation.Name(); ok {
-		_spec.SetField(user.FieldName, field.TypeString, value)
-	}
-	if value, ok := uuo.mutation.Active(); ok {
-		_spec.SetField(user.FieldActive, field.TypeBool, value)
 	}
 	if uuo.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{

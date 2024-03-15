@@ -3,9 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/hvturingga/ya/ent/user"
+	"github.com/hvturingga/ya/cmd/cli/internal"
 	"github.com/hvturingga/ya/internal/entclient"
-	"github.com/hvturingga/ya/internal/ya"
 	"github.com/spf13/cobra"
 	"os"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 var providerCmd = &cobra.Command{
 	Use:   "provider",
 	Short: "Used to manage the proxy platform utilised.",
-	Long: `It allows for the display or alteration of the 
+	Long: `It allows for the display or alteration of the
 proxy platform that ya operates on, among othe
 r functionalities, for provider management.
 `,
@@ -28,39 +27,28 @@ var switchProviderCmd = &cobra.Command{
 	Short:   "Switch between different providers.",
 	Long:    `This command allows the user to switch between different proxy providers.`,
 	Aliases: []string{"s"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := entclient.New()
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			return
+			return err
 		}
 		defer client.Close()
 
 		ctx := context.Background()
 
-		U, err := client.User.Query().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
-			WithProvider().
-			Only(ctx)
+		getUser, err := internal.GetUser(ctx, client)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
-
 		all, err := client.Provider.Query().All(ctx)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			return err
 		}
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", "ID", "Name", "Version", "Now", "Path")
 		for _, provider := range all {
-			if U.Edges.Provider != nil && provider.ID == U.Edges.Provider.ID {
+			if getUser.Edges.Provider != nil && provider.ID == getUser.Edges.Provider.ID {
 				fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\n", provider.ID, provider.Name, provider.Version, "✔", provider.Path)
 			} else {
 				fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\n", provider.ID, provider.Name, provider.Version, " ", provider.Path)
@@ -93,24 +81,21 @@ var switchProviderCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if U.Edges.Provider != nil {
-			if id == U.Edges.Provider.ID {
+		if getUser.Edges.Provider != nil {
+			if id == getUser.Edges.Provider.ID {
 				fmt.Println("The provider is in use.")
 				os.Exit(0)
 			}
 		}
 
-		U.Update().
-			Where(
-				user.NameEQ(
-					ya.GetUser(),
-				),
-			).
+		getUser.Update().
 			ClearSubscribe().
 			SetProviderID(id).
 			ExecX(ctx)
 
 		fmt.Println("INFO: Provider switched. Re-run daemon to use the new provider.")
+
+		return nil
 	},
 }
 

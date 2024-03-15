@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/hvturingga/ya/cmd/daemon-go/adapter"
+	"github.com/hvturingga/ya/conf"
 	"github.com/hvturingga/ya/ent"
-	U "github.com/hvturingga/ya/ent/user"
 	api_server "github.com/hvturingga/ya/internal/api-server"
 	"github.com/hvturingga/ya/internal/entclient"
 	"github.com/hvturingga/ya/internal/nodeswitch"
-	"github.com/hvturingga/ya/internal/ya"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
@@ -21,57 +20,46 @@ var startCmd = &cobra.Command{
 	Use:   "start <database>",
 	Short: "Start daemon",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
 		path, _ := cmd.Flags().GetString("database")
 
 		if strings.TrimSpace(path) == "" {
-			path = ya.GetYaDatabasePath()
+			path = conf.GetDatabasePath()
 		}
 
 		client, err := entclient.New(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create client: %v\n", err)
-			return
+			return err
 		}
 		defer client.Close()
 
 		// Inline fetchUser logic
-		user, err := client.User.Query().
-			Where(
-				U.ActiveEQ(true),
-			).
-			WithProvider().
-			WithSubscribe(func(query *ent.SubscribeQuery) {
-				query.WithNodes()
-			}).
-			Only(ctx)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to fetch user: %v\n", err)
-			return
+		getUser := client.User.Query().WithProvider().WithSubscribe().WithDaemon().FirstX(ctx)
+
+		if getUser.Edges.Provider == nil {
+			fmt.Fprintf(os.Stderr, "no provider\n")
+			return err
 		}
-		if user.Edges.Provider == nil {
-			fmt.Fprintf(os.Stderr, "User %s has no provider\n", user.Name)
-			return
-		}
-		if user.Edges.Subscribe == nil {
-			fmt.Fprintf(os.Stderr, "User %s has no subscribe\n", user.Name)
-			return
+		if getUser.Edges.Subscribe == nil {
+			fmt.Fprintf(os.Stderr, "no subscribe\n")
+			return err
 		}
 
-		adapter.NewAdapter(ctx, user).Start()
+		adapter.NewAdapter(ctx, getUser).Start()
 
 		// Inline switchNodes logic
 		if !api_server.WaitForAPIServer() {
 			fmt.Fprintf(os.Stderr, "Failed to detect API server startup\n")
-			return
+			return err
 		}
 
 		var wg sync.WaitGroup
-		errors := make(chan error, len(user.Edges.Subscribe.Edges.Nodes))
+		errors := make(chan error, len(getUser.Edges.Subscribe.Edges.Nodes))
 
-		for _, l := range user.Edges.Subscribe.Edges.Nodes {
+		for _, l := range getUser.Edges.Subscribe.Edges.Nodes {
 			wg.Add(1)
 			go func(l *ent.Node) {
 				defer wg.Done()
@@ -87,9 +75,10 @@ var startCmd = &cobra.Command{
 		for err := range errors {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to switch nodes: %v\n", err)
-				return
+				return err
 			}
 		}
+		return err
 	},
 }
 

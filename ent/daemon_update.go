@@ -34,14 +34,6 @@ func (du *DaemonUpdate) SetPath(s string) *DaemonUpdate {
 	return du
 }
 
-// SetNillablePath sets the "path" field if the given value is not nil.
-func (du *DaemonUpdate) SetNillablePath(s *string) *DaemonUpdate {
-	if s != nil {
-		du.SetPath(*s)
-	}
-	return du
-}
-
 // SetEnable sets the "enable" field.
 func (du *DaemonUpdate) SetEnable(b bool) *DaemonUpdate {
 	du.mutation.SetEnable(b)
@@ -180,14 +172,6 @@ type DaemonUpdateOne struct {
 // SetPath sets the "path" field.
 func (duo *DaemonUpdateOne) SetPath(s string) *DaemonUpdateOne {
 	duo.mutation.SetPath(s)
-	return duo
-}
-
-// SetNillablePath sets the "path" field if the given value is not nil.
-func (duo *DaemonUpdateOne) SetNillablePath(s *string) *DaemonUpdateOne {
-	if s != nil {
-		duo.SetPath(*s)
-	}
 	return duo
 }
 

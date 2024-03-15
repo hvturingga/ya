@@ -366,18 +366,6 @@ func (uq *UserQuery) WithDaemon(opts ...func(*DaemonQuery)) *UserQuery {
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
-//
-// Example:
-//
-//	var v []struct {
-//		Name string `json:"name,omitempty"`
-//		Count int `json:"count,omitempty"`
-//	}
-//
-//	client.User.Query().
-//		GroupBy(user.FieldName).
-//		Aggregate(ent.Count()).
-//		Scan(ctx, &v)
 func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 	uq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &UserGroupBy{build: uq}
@@ -389,16 +377,6 @@ func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
-//
-// Example:
-//
-//	var v []struct {
-//		Name string `json:"name,omitempty"`
-//	}
-//
-//	client.User.Query().
-//		Select(user.FieldName).
-//		Scan(ctx, &v)
 func (uq *UserQuery) Select(fields ...string) *UserSelect {
 	uq.ctx.Fields = append(uq.ctx.Fields, fields...)
 	sbuild := &UserSelect{UserQuery: uq}
